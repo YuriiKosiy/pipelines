@@ -25,21 +25,21 @@ class Pipeline:
         from llama_index.core import VectorStoreIndex, Settings
         from llama_index.readers.github import GithubRepositoryReader, GithubClient
 
+        # Зчитування даних з ENV, або вручну
+        github_token = os.getenv("GITHUB_TOKEN", input("Enter GITHUB_TOKEN: "))
+        model_name = os.getenv("LLM_MODEL", input("Enter model name (default: llama3): ") or "llama3")
+        base_url = os.getenv("BASE_URL", input("Enter base_url (default: http://localhost:11434): ") or "http://localhost:11434")
+        owner = os.getenv("GITHUB_OWNER", input("Enter GitHub owner (default: open-webui): ") or "open-webui")
+        repo = os.getenv("GITHUB_REPO", input("Enter GitHub repo (default: plugin-server): ") or "plugin-server")
+        branch = os.getenv("GITHUB_BRANCH", input("Enter GitHub branch (default: main): ") or "main")
+
         Settings.embed_model = OllamaEmbedding(
             model_name="nomic-embed-text",
-            base_url="http://localhost:11434",
+            base_url=base_url,
         )
-        Settings.llm = Ollama(model="llama3")
-
-        global index, documents
-
-        github_token = os.environ.get("GITHUB_TOKEN")
-        owner = "open-webui"
-        repo = "plugin-server"
-        branch = "main"
+        Settings.llm = Ollama(model=model_name)
 
         github_client = GithubClient(github_token=github_token, verbose=True)
-
         reader = GithubRepositoryReader(
             github_client=github_client,
             owner=owner,
@@ -54,7 +54,7 @@ class Pipeline:
                     ".gif",
                     ".svg",
                     ".ico",
-                    "json",
+                    ".json",
                     ".ipynb",
                 ],
                 GithubRepositoryReader.FilterType.EXCLUDE,
@@ -62,11 +62,10 @@ class Pipeline:
         )
 
         loop = asyncio.new_event_loop()
-
         reader._loop = loop
 
         try:
-            # Load data from the branch
+            # Завантаження даних
             self.documents = await asyncio.to_thread(reader.load_data, branch=branch)
             self.index = VectorStoreIndex.from_documents(self.documents)
         finally:
@@ -74,21 +73,3 @@ class Pipeline:
 
         print(self.documents)
         print(self.index)
-
-    async def on_shutdown(self):
-        # This function is called when the server is stopped.
-        pass
-
-    def pipe(
-        self, user_message: str, model_id: str, messages: List[dict], body: dict
-    ) -> Union[str, Generator, Iterator]:
-        # This is where you can add your custom RAG pipeline.
-        # Typically, you would retrieve relevant information from your knowledge base and synthesize it to generate a response.
-
-        print(messages)
-        print(user_message)
-
-        query_engine = self.index.as_query_engine(streaming=True)
-        response = query_engine.query(user_message)
-
-        return response.response_gen
