@@ -15,7 +15,7 @@ class Pipeline:
         # The identifier must be unique across all pipelines.
         # The identifier must be an alphanumeric string that can include underscores or hyphens. It cannot contain spaces, special characters, slashes, or backslashes.
         # self.id = "wiki_pipeline"
-        self.name = "Wikipedia Pipeline"
+        self.name = "Wikipedia Pipeline Ukraine"
 
         # Initialize rate limits
         self.valves = self.Valves(**{"OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", "")})
@@ -45,7 +45,7 @@ class Pipeline:
                 query = query.replace(" ", "_")
 
                 r = requests.get(
-                    f"https://en.wikipedia.org/w/api.php?action=opensearch&search={query}&limit=1&namespace=0&format=json"
+                    f"https://uk.wikipedia.org/w/api.php?action=opensearch&search={query}&limit=1&namespace=0&format=json"
                 )
 
                 response = r.json()
@@ -55,7 +55,7 @@ class Pipeline:
             context = None
             if len(titles) > 0:
                 r = requests.get(
-                    f"https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles={'|'.join(titles)}"
+                    f"https://uk.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro&explaintext&redirects=1&titles={'|'.join(titles)}"
                 )
                 response = r.json()
                 # get extracts
